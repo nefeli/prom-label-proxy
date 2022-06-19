@@ -15,6 +15,7 @@ package injectproxy
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -275,6 +276,10 @@ func (r *routes) enforceLabel(h http.HandlerFunc) http.Handler {
 			}
 		}
 
+		if r.upstream.User.Username() != "" {
+			encodedUserPass := base64.StdEncoding.EncodeToString([]byte(r.upstream.User.String()))
+			req.Header.Set("Authorization", fmt.Sprintf("Basic %s", encodedUserPass))
+		}
 		h.ServeHTTP(w, req)
 	})
 }
