@@ -21,11 +21,30 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/prometheus-community/prom-label-proxy/injectproxy"
 )
+
+func envOrEmptyStr(key string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+	return ""
+}
+
+func envOrFalse(key string) bool {
+	if val, ok := os.LookupEnv(key); ok {
+		b, err := strconv.ParseBool(val)
+		if err != nil {
+			log.Fatalf("envOrFalse[%s]: %v", key, err)
+		}
+		return b
+	}
+	return false
+}
 
 func main() {
 	var (
@@ -41,20 +60,21 @@ func main() {
 	)
 
 	flagset := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	flagset.StringVar(&insecureListenAddress, "insecure-listen-address", "", "The address the prom-label-proxy HTTP server should listen on.")
-	flagset.StringVar(&upstream, "upstream", "", "The upstream URL to proxy to.")
-	flagset.StringVar(&queryParam, "query-param", "", "The query parameter to obtain the label value from. This or -header is required.")
-	flagset.StringVar(&headerName, "header", "", "The HTTP header name to obtain the label value from. This or -query-param is required.")
-	flagset.StringVar(&label, "label", "", "The label to enforce in all proxied PromQL queries. "+
+	flagset.StringVar(&insecureListenAddress, "insecure-listen-address", envOrEmptyStr("INSECURE_LISTEN_ADDRESS"), "The address the prom-label-proxy HTTP server should listen on.")
+	flagset.StringVar(&upstream, "upstream", envOrEmptyStr("UPSTREAM"), "The upstream URL to proxy to.")
+	flagset.StringVar(&queryParam, "query-param", envOrEmptyStr("QUERY_PARAM"), "The query parameter to obtain the label value from. This or -header is required.")
+	flagset.StringVar(&headerName, "header", envOrEmptyStr("HEADER"), "The HTTP header name to obtain the label value from. This or -query-param is required.")
+	flagset.StringVar(&label, "label", envOrEmptyStr("LABEL"), "The label to enforce in all proxied PromQL queries. "+
 		"This label will be also required as the URL parameter to get the value to be injected. For example: -label=tenant will"+
 		" make it required for this proxy to have URL in form of: <URL>?tenant=abc&other_params...")
-	flagset.BoolVar(&enableLabelAPIs, "enable-label-apis", false, "When specified proxy allows to inject label to label APIs like /api/v1/labels and /api/v1/label/<name>/values. "+
+	flagset.BoolVar(&enableLabelAPIs, "enable-label-apis", envOrFalse("ENABLE_LABEL_APIS"), "When specified proxy allows to inject label to label APIs like /api/v1/labels and /api/v1/label/<name>/values. "+
 		"NOTE: Enable with care because filtering by matcher is not implemented in older versions of Prometheus (>= v2.24.0 required) and Thanos (>= v0.18.0 required, >= v0.23.0 recommended). If enabled and "+
 		"any labels endpoint does not support selectors, the injected matcher will have no effect.")
-	flagset.StringVar(&unsafePassthroughPaths, "unsafe-passthrough-paths", "", "Comma delimited allow list of exact HTTP path segments that should be allowed to hit upstream URL without any enforcement. "+
-		"This option is checked after Prometheus APIs, you cannot override enforced API endpoints to be not enforced with this option. Use carefully as it can easily cause a data leak if the provided path is an important "+
-		"API (like /api/v1/configuration) which isn't enforced by prom-label-proxy. NOTE: \"all\" matching paths like \"/\" or \"\" and regex are not allowed.")
-	flagset.BoolVar(&errorOnReplace, "error-on-replace", false, "When specified, the proxy will return HTTP status code 400 if the query already contains a label matcher that differs from the one the proxy would inject.")
+	flagset.StringVar(&unsafePassthroughPaths, "unsafe-passthrough-paths", envOrEmptyStr("UNSAFE_PASSTHROUGH_PATHS"), "Comma delimited allow list of exact HTTP path segments that should be allowed to hit "+
+		"upstream URL without any enforcement. This option is checked after Prometheus APIs, you cannot override enforced API endpoints to be not enforced with this option. Use carefully as it can easily cause "+
+		"a data leak if the provided path is an important API (like /api/v1/configuration) which isn't enforced by prom-label-proxy. NOTE: \"all\" matching paths like \"/\" or \"\" and regex are not allowed.")
+	flagset.BoolVar(&errorOnReplace, "error-on-replace", envOrFalse("ERROR_ON_REPLACE"), "When specified, the proxy will return HTTP status code 400 if the query already contains a label matcher that differs "+
+		"from the one the proxy would inject.")
 
 	//nolint: errcheck // Parse() will exit on error.
 	flagset.Parse(os.Args[1:])
