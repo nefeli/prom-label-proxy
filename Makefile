@@ -12,8 +12,8 @@
 # limitations under the License.
 
 # Needs to be defined before including Makefile.common to auto-generate targets
-DOCKER_ARCHS ?= amd64 arm64
-DOCKER_REPO  ?= prometheuscommunity
+DOCKER_ARCHS ?= amd64
+DOCKER_REPO  ?= nefelinetworks
 
 include Makefile.common
 
