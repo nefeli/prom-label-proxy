@@ -50,8 +50,8 @@ type options struct {
 	enableLabelAPIs  bool
 	passthroughPaths []string
 	errorOnReplace   bool
-	queryParam      string
-	headerName      string
+	queryParam       string
+	headerName       string
 }
 
 type Option interface {

@@ -51,7 +51,6 @@ func main() {
 		insecureListenAddress  string
 		upstream               string
 		label                  string
-		headerName             string
 		queryParam             string
 		enableLabelAPIs        bool
 		unsafePassthroughPaths string // Comma-delimited string.
@@ -63,7 +62,7 @@ func main() {
 	flagset.StringVar(&insecureListenAddress, "insecure-listen-address", envOrEmptyStr("INSECURE_LISTEN_ADDRESS"), "The address the prom-label-proxy HTTP server should listen on.")
 	flagset.StringVar(&upstream, "upstream", envOrEmptyStr("UPSTREAM"), "The upstream URL to proxy to.")
 	flagset.StringVar(&queryParam, "query-param", envOrEmptyStr("QUERY_PARAM"), "The query parameter to obtain the label value from. This or -header is required.")
-	flagset.StringVar(&headerName, "header", envOrEmptyStr("HEADER"), "The HTTP header name to obtain the label value from. This or -query-param is required.")
+	flagset.StringVar(&header, "header", envOrEmptyStr("HEADER"), "The HTTP header name to obtain the label value from. This or -query-param is required.")
 	flagset.StringVar(&label, "label", envOrEmptyStr("LABEL"), "The label to enforce in all proxied PromQL queries. "+
 		"This label will be also required as the URL parameter to get the value to be injected. For example: -label=tenant will"+
 		" make it required for this proxy to have URL in form of: <URL>?tenant=abc&other_params...")
